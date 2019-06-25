@@ -1,0 +1,9 @@
+source coverage/scripts/utility.scp
+clear_log_message
+export TEST_ITEM="extend"
+
+cmd_check "insmod lfsmdr.ko tf_crash_eumulation=1 lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=1 lfsm_cn_ssds=8"
+cmd_check "./rfsioctl /dev/sofactrl diskgrp_add 4 4"
+rmmod_lfsmdr
+coverage/collect.sh
+copy_log_message

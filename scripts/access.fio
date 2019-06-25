@@ -1,0 +1,44 @@
+[global]
+ioengine=libaio
+group_reporting
+thread
+
+direct=1
+readwrite=randwrite
+randrepeat=0
+iodepth=32
+time_based
+#runtime=180
+runtime=5
+norandommap
+#size=1M
+#verify=meta
+#runtime=10
+size=100%
+numjobs=1
+
+[task a]
+filename=/dev/lfsm-0
+bs=16K
+rw=randwrite
+#cpus_allowed=2
+
+[task b]
+filename=/dev/lfsm-0
+bs=4K
+rw=randread
+
+[task c]
+filename=/dev/lfsm-1
+bs=4K
+rw=randwrite
+
+[task d]
+filename=/dev/lfsm-1
+bs=512
+rw=randwrite
+
+[task e]
+filename=/dev/lfsm-1
+bs=512
+rw=randread

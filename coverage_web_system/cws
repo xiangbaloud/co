@@ -1,0 +1,12 @@
+#!/bin/bash
+
+cws_env="/home/coverage/coverage_web_system/env_py3"
+cws_manager="/home/coverage/coverage_web_system/coverage_websys_py3"
+local_ip=$(hostname -I | tr -d ' ')
+
+echo 'finish' > /tmp/covt_result
+
+source $cws_env/bin/activate
+$cws_manager/manage.py makemigrations
+$cws_manager/manage.py migrate
+$cws_manager/manage.py runserver $local_ip:80

@@ -1,0 +1,10 @@
+
+if [ ! -f "$YAKIN_DIR/DedupCLI/bin/dedup-cli" ]
+then
+	echo "build dedup-cli"
+	cd $YAKIN_DIR && make install
+	cd $YAKIN_DIR/DedupCLI && ./autogen.sh && ./configure  && make
+fi
+
+echo "build yakin module"
+cd $YAKIN_DIR && make -j 8

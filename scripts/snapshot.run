@@ -1,0 +1,89 @@
+source coverage/scripts/utility.scp
+source coverage/scripts/scandev.run
+
+for (( i=0; i<=1; i=i+1 ))
+do
+	clear_log_message
+	export TEST_ITEM="snapshot_$i"
+	tf_crash_eumulation=$i
+	
+	echo "tf_crash_eumulation:${tf_crash_eumulation}"
+	cmd_check "insmod lfsmdr.ko tf_crash_eumulation=$tf_crash_eumulation lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" 1
+
+	size_page=80000
+	round=4096
+	Iround=10
+	st=0
+	export utest_seed48=123	
+	cmd_check "./sofactl volcreate vol0 10g"
+
+	cmd_check "mkfs -t ext4 /dev/lfsm-0"
+	cmd_check "mkdir -p /mnt/snapshot"
+	cmd_check "mount /dev/lfsm-0 /mnt/snapshot"
+
+	cmd_check "./sofactl volcreate vol1 1g"
+	cmd_check "./sofactl volclone vol1 vol2"
+	cmd_check "./sofactl set_readonly vol2"
+
+	vol2_uuid=`$GEMINI_DIR/bin/rsimg diff vol2 -b /mnt/snapshot/`
+
+	cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-1 sw 0 $round"
+
+	cmd_check "./sofactl volclone vol1 vol3"
+	cmd_check "./sofactl set_readonly vol3"
+
+	vol3_uuid=`$GEMINI_DIR/bin/rsimg diff vol2 vol3 -b /mnt/snapshot/`
+
+	cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-1 sw 4096 $round"
+
+	cmd_check "./sofactl volclone vol1 vol4"
+	cmd_check "./sofactl set_readonly vol4"
+
+	vol4_uuid=`$GEMINI_DIR/bin/rsimg diff vol3 vol4 -b /mnt/snapshot/`
+
+	cmd_check "./sofactl inactivate vol3"
+	cmd_check "./sofactl voldel vol3"
+
+	cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-1 sw 8192 $round"
+	cmd_check "./sofactl volclone vol1 vol5"
+	cmd_check "./sofactl set_readonly vol5"
+
+	vol5_uuid=`$GEMINI_DIR/bin/rsimg diff vol4 vol5 -b /mnt/snapshot/`
+
+	cmd_check "./sofactl inactivate vol4"
+	cmd_check "./sofactl voldel vol4"
+
+	cmd_check "./sofactl volclone vol5 vol6"
+
+	vol6_uuid=`$GEMINI_DIR/bin/rsvol vol6`
+	vol5_uuid=`$GEMINI_DIR/bin/rsvol vol5`
+
+	if [ $tf_crash_eumulation == 1 ]
+	then
+		echo "rebuild....."
+		cmd_check "umount /mnt/snapshot"
+		detach_disk 1
+		sleep 5
+		coverage/scripts/proc.run
+		
+		rmmod_lfsmdr 1
+		cmd_check "insmod lfsmdr.ko tf_crash_eumulation=$tf_crash_eumulation lfsm_reinstall=0 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" 1
+		attach_disk 1
+		wait_rebuild
+		sleep 10
+		cmd_check "mount /dev/lfsm-0 /mnt/snapshot"
+		sleep 15
+	fi
+
+	$GEMINI_DIR/bin/rsimg restore $vol2_uuid -r $vol2_uuid:$vol5_uuid -o $vol6_uuid -b /mnt/snapshot/
+
+	cmd_check "diff /dev/lfsm-2 /dev/lfsm-6"
+
+	cmd_check "umount /mnt/snapshot"
+	cmd_check "rm -rf /mnt/snapshot"
+
+	sleep 5
+	rmmod_lfsmdr 1
+	coverage/collect.sh
+	copy_log_message
+done

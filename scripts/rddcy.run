@@ -1,0 +1,28 @@
+for (( i=0; i<=1; i=i+1 ))
+do
+	tf_crash_eumulation=$i
+
+	insmod lfsmdr.ko tf_crash_eumulation=$tf_crash_eumulation lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8
+
+	len=262144
+	st=0
+
+	export utest_seed48=12345	
+
+	./sofactl volcreate vol0 1g
+	$UIOTEST_DIR/ttest /dev/lfsm-0 sw $st $len > /dev/null
+
+	coverage/scripts/scandev.run 2 "remove"
+	sleep 3
+
+	rmmod_lfsmdr
+	insmod lfsmdr.ko tf_crash_eumulation=$tf_crash_eumulation lfsm_reinstall=0 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8
+
+	coverage/scripts/scandev.run 2 "add"
+	sleep 15
+	$UIOTEST_DIR/ttest /dev/lfsm-0 sr $st $len > /dev/null
+	sleep 3
+
+	rmmod_lfsmdr
+	coverage/collect.sh
+done

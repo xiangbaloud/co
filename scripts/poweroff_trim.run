@@ -1,0 +1,59 @@
+source coverage/scripts/utility.scp
+clear_log_message
+export TEST_ITEM="poweroff_trim"
+
+disksize=262144
+trim_len=$disksize
+rang=$disksize
+round=$(($disksize/3)) 
+Iround=3
+st=0
+
+cmd_check "insmod lfsmdr.ko lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8"
+cmd_check "./sofactl volcreate vol0 1g"
+
+for ((i=0; i<$Iround; i++))
+do	
+	export utest_seed48=12345
+	$UIOTEST_DIR/ttest /dev/lfsm-0 randswsr $rang $round $st > $COVERAGE_DIR/log/$TEST_TIME/w_$TEST_ITEM.log
+	cor_num=`awk -f "$COVERAGE_DIR/scripts/check_correct_num.awk" $COVERAGE_DIR/log/$TEST_TIME/w_$TEST_ITEM.log`
+	err=$(($rang-$cor_num))
+	if (($err==0))
+	then
+		echo "check data ok!!" >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+	else
+		echo "check data fail!!" >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+		rmmod_lfsmdr
+		exit 1
+	fi
+	sleep 5
+	rmmod_lfsmdr
+	cmd_check "insmod lfsmdr.ko lfsm_reinstall=0 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8"
+	$UIOTEST_DIR/ttest /dev/lfsm-0 chkrandswsr $rang $round $st > $COVERAGE_DIR/log/$TEST_TIME/w_$TEST_ITEM.log
+	cor_num=`awk -v fakedk=0 -f "$COVERAGE_DIR/scripts/check_correct_num_fakedk.awk" $COVERAGE_DIR/log/$TEST_TIME/w_$TEST_ITEM.log`
+	err=$(($rang-$cor_num))
+	if (($err==0))
+	then
+		echo "poweroff_trim is ok!!" >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log		
+	else
+		echo "poweroff_trim is Error!!" >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+		rmmod_lfsmdr
+		exit 1
+	fi	
+	sleep 5
+	cmd_check "blkdiscard -o 0 -l $(($trim_len*4096)) -v /dev/lfsm-0"
+	$UIOTEST_DIR/ttest /dev/lfsm-0 randsr $rang $round $st > $COVERAGE_DIR/log/$TEST_TIME/w_$TEST_ITEM.log
+	cn_trimed=`grep nil  $COVERAGE_DIR/log/$TEST_TIME/w_$TEST_ITEM.log |wc -l`
+	if (($cn_trimed==$round))
+	then
+		echo "check data ok!!" >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+	else
+		echo "check data fail!!" >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+		rmmod_lfsmdr
+		exit 1
+	fi
+done
+sleep 5
+rmmod_lfsmdr
+coverage/collect.sh
+copy_log_message

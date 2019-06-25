@@ -1,0 +1,19 @@
+source coverage/scripts/utility.scp
+clear_log_message
+export TEST_ITEM="bioctrl"
+
+cmd_check "insmod lfsmdr.ko tf_crash_eumulation=1 lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" 1
+cmd_check "./sofactl volcreate hello 4g"
+cmd_check "dd if=/dev/urandom of=/dev/lfsm-0 bs=4M count=10 oflag=direct"
+sleep 1
+cmd_check "mkfs /dev/lfsm-0"
+sleep 1
+cmd_check "blkdiscard /dev/lfsm-0"
+sleep 1
+rmmod_lfsmdr 1
+coverage/collect.sh
+
+cmd_check "insmod lfsmdr.ko tf_crash_eumulation=1 lfsm_reinstall=0 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" 1
+rmmod_lfsmdr 1
+coverage/collect.sh
+copy_log_message

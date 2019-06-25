@@ -1,0 +1,34 @@
+source coverage/scripts/utility.scp
+clear_log_message
+export TEST_ITEM="ioctl"
+
+cmd_check "insmod lfsmdr.ko lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8"
+cmd_check "./yakinctl/yakinctl system active_thread 3 1"
+cmd_check "./yakinctl/yakinctl system active_thread 0 0"
+cmd_check "./yakinctl/yakinctl system bmt_delay 10"
+cmd_check "./yakinctl/yakinctl system bmt_thres 80 5"
+cmd_check "./yakinctl/yakinctl system cap_uperbound 10"
+cmd_check "./yakinctl/yakinctl system check segpool"
+#cmd_check "./yakinctl/yakinctl system dump segpool"
+cmd_check "./yakinctl/yakinctl system earlyresp 1"
+cmd_check "./yakinctl/yakinctl system force_bmt_commit"
+cmd_check "./yakinctl/yakinctl system freeppq 10"
+cmd_check "./yakinctl/yakinctl system hotswap 0"
+cmd_check "./yakinctl/yakinctl system hotswap 1"
+cmd_check "./yakinctl/yakinctl system mlog 1"
+cmd_check "./yakinctl/yakinctl system mlog 2"
+cmd_check "./yakinctl/yakinctl system print_level 0"
+cmd_check "./yakinctl/yakinctl system print_level 1"
+cmd_check "./yakinctl/yakinctl system print_level 2"
+cmd_check "./yakinctl/yakinctl system ratecontrol 0 100"
+cmd_check "./yakinctl/yakinctl system ratecontrol 1 100"
+cmd_check "./yakinctl/yakinctl system track_biosize 0"
+cmd_check "./yakinctl/yakinctl system track_biosize 1"
+cmd_check "./yakinctl/yakinctl system track_latency 0"
+cmd_check "./yakinctl/yakinctl system track_latency 1"
+cmd_check "./yakinctl/yakinctl system trim_delay 10"
+cmd_check "./yakinctl/yakinctl system wakeup_deadgc"
+cmd_check "./yakinctl/yakinctl system zdedup_rate 50 5 5"
+rmmod_lfsmdr
+coverage/collect.sh
+copy_log_message

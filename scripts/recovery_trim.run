@@ -1,0 +1,42 @@
+source coverage/scripts/utility.scp
+clear_log_message
+export TEST_ITEM="recovery_trim"
+
+disksize=262144
+trim_len=$disksize
+rang=$disksize
+round=$(($disksize/2))
+Iround=3
+st=0
+
+cmd_check "insmod lfsmdr.ko tf_crash_eumulation=1 lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" 1
+cmd_check "./sofactl volcreate vol0 1g"
+
+after_trim_check()
+{
+	$UIOTEST_DIR/ttest /dev/lfsm-0 randsr $rang $round $st > $COVERAGE_DIR/log/$TEST_TIME/w_$TEST_ITEM.log
+	cn_trimed=`grep nil  $COVERAGE_DIR/log/$TEST_TIME/w_$TEST_ITEM.log |wc -l`
+	if (($cn_trimed==$round))
+	then
+		echo "after trim check is OK" >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+	else
+		echo "check data fail!!" >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+		rmmod_lfsmdr 1
+	fi
+}
+
+for ((i=0; i<$Iround; i++))
+do	
+	export utest_seed48=12345
+	cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-0 randsw $rang $round $st"
+	cmd_check "blkdiscard -o 0 -l $(($trim_len*4096)) -v /dev/lfsm-0"
+	after_trim_check
+	sleep 40
+	rmmod_lfsmdr 1
+	cmd_check "insmod lfsmdr.ko tf_crash_eumulation=1 lfsm_reinstall=0 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" 1
+	after_trim_check
+	sleep 5
+done
+rmmod_lfsmdr 1
+coverage/collect.sh
+copy_log_message

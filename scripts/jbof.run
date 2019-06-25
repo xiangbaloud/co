@@ -1,0 +1,46 @@
+source coverage/scripts/utility.scp
+source coverage/scripts/scandev.run
+clear_log_message
+export TEST_ITEM="jbof"
+
+if [ ! -f "/tmp/enclosure.log" ]
+then
+	touch /tmp/enclosure.log 
+	echo "0|-1=-1:-1:-1:-1
+	      1|4=14:0:0:0" > /tmp/enclosure.log
+fi
+
+if [ ! -f "/tmp/simulate_enclosure.log" ]
+then
+	touch /tmp/simulate_enclosure.log
+fi
+
+cmd_check "insmod lfsmdr.ko lfsm_cn_ssds=8 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_reinstall=1 lfsm_cn_diskgrp=2 enclosure_identify_path=/tmp/enclosure.log simulate_enclosure_path=/tmp/simulate_enclosure.log" 1
+
+cmd_check "./sofactl volcreate hello 1g"
+export utest_seed48=123
+cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-0 randsw 262144 131072 0"
+job_name=`jobs -p | tail -n 1`
+
+cmd_check "rm -f /tmp/simulate_enclosure.log"
+detach_disk 4
+detach_disk 5
+detach_disk 6
+detach_disk 7
+sleep 10
+cmd_check "wait $job_name"
+
+attach_disk 4
+attach_disk 5
+attach_disk 6
+attach_disk 7
+wait_rebuild
+sleep 10
+	
+cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-0 randsr 262144 131072 0"
+
+sleep 3
+rmmod_lfsmdr 1
+cmd_check "rm -f /tmp/enclosure.log"
+coverage/collect.sh
+copy_log_message

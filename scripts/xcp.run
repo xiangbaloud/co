@@ -1,0 +1,45 @@
+source coverage/scripts/utility.scp
+source coverage/scripts/scandev.run
+
+for (( i=0; i<=1; i=i+1 ))
+do
+	tf_crash_eumulation=$i
+	clear_log_message
+	export TEST_ITEM="xcp_$i"
+	
+	cmd_check "insmod lfsmdr.ko tf_crash_eumulation=$tf_crash_eumulation lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" 1
+
+	range=4000
+	round=8000
+		
+	cmd_check "./sofactl volcreate vol0 6g"
+	cmd_check "./sofactl volclone vol0 vol1"
+	cmd_check "./sofactl volclone vol1 vol2"
+
+	cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-0 randswsr $range $round 0"
+
+	cmd_check "./sofactl xcp 1 0 0 0 32000"
+	cmd_check "./sofactl xcp 2 0 0 0 32000"
+
+	cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-0 chkrandswsr $range $round 0"
+	cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-1 chkrandswsr $range $round 0"
+	cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-2 chkrandswsr $range $round 0"
+
+	detach_disk 1
+	sleep 10
+
+	rmmod_lfsmdr 1
+	cmd_check "insmod lfsmdr.ko tf_crash_eumulation=$tf_crash_eumulation lfsm_reinstall=0 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" 1
+	attach_disk 1
+	wait_rebuild
+	sleep 10
+
+	cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-0 chkrandswsr $range $round 0"
+	cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-1 chkrandswsr $range $round 0"
+	cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-2 chkrandswsr $range $round 0"
+
+	sleep 5
+	rmmod_lfsmdr 1
+	coverage/collect.sh
+	copy_log_message
+done

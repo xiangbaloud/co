@@ -1,0 +1,546 @@
+body {
+    width: 100%;
+    height: 100%;
+    margin: auto;
+}
+
+#h_header {
+    font-size: 20px;
+}
+
+.button_a {
+    font-family: serif;
+    font-size: 90%;
+    float: right;
+    background-color: white;
+    border-radius: 4px;
+}
+
+#d-reload {
+    display: none;
+    position: fixed;
+    padding-top: 300px;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4);
+}
+
+#d-reload-content {
+    margin: auto;
+    height: 10%;
+    width: 10%;
+}
+
+#file_list {
+    background-color: rgba(192, 192, 192, 0.3);
+    padding: 5px 15px 5px 15px;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    margin: auto;
+}
+
+#b_container {
+    padding: 5px 25px 5px 25px;
+    width: 100%;
+    height: 300px;
+    background-color: #f1f1f1;
+}
+
+#file_upload {
+    /*padding: 5px 25px 5px 25px;*/
+    width: 50%;
+    height: 100%;
+    float: right;
+}
+
+#checkout_git {
+    /*padding: 5px 25px 5px 25px;*/
+    width: 50%;
+    height: 100%;
+    float: left;
+}
+
+#branch_searchBox {
+    width: 45%;
+    height: 25px;
+}
+
+#commit_id {
+   width: 36%;
+}
+
+#hp_select_branch {
+   width: 45%
+}
+
+hr.line {
+    width: 100%;
+    height: 1px;
+    background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.75), rgba(0,0,0,0));
+}
+
+#h_start_to_test {
+    padding: 5px 25px 5px 25px;
+    display: inline-block;
+    width: 100%;
+    height: 70%;
+}
+
+/* Style the tab */
+.tab {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+}
+
+/* Style the buttons that are used to open the tab content */
+.tab button {
+    background-color: inherit;
+    color: #6c757d;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+}
+
+/* Change background color of buttons on hover */
+.tab button:hover {
+    background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+.tab button.active {
+    background-color: #ccc;
+}
+
+/* Style the tab content */
+.tabcontent {
+    overflow: auto;
+    display: none;
+    padding: 5px 25px 5px 25px;
+    border: 1px solid #ccc;
+    border-top: none;
+    width: 100%;
+    height: 450px;
+}
+
+#h_testcase_selector {
+    padding: 5px 25px 5px 25px;
+    width: 100%;
+}
+
+/* The select_case_box background */
+#select_case_box {
+    display: none;
+    position: fixed;
+    overflow: auto;
+    width: 100%;
+    height: 100%;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4);
+}
+
+/* select_case_box content */
+#select_case_box_content {
+    position: relative;
+    background-color: #fefefe;
+    margin: auto;
+    border: 1px solid #888;
+    width: 50%;
+    height: 70%;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+    -webkit-animation-name: case_selector_box;
+    -webkit-animation-duration: 0.4s;
+    animation-name: case_selector_box;
+    animation-duration: 0.4s
+}
+
+/* select_case_box animation */
+@-webkit-keyframes case_selector_box {
+    from {top:-300px; opacity:0} 
+    to {top:0; opacity:1}
+}
+
+@keyframes case_selector_box {
+    from {top:-300px; opacity:0}
+    to {top:0; opacity:1}
+}
+
+#select_case_box_header {
+    padding: 5px 25px 5px 25px;
+    background-color: #f1f1f1;
+    height: 5%;
+    width: 100%;
+    color: black;
+}
+
+#select_case_box_header0 {
+    float: left;
+}
+
+#select_case_box_header_close {
+    float: right;
+}
+
+#select_case_box_header_close:hover,
+#select_case_box_header_close:focus {
+    color: #797979;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#select_case_box_bottom {
+    padding: 5px 25px 5px 25px;
+    background-color: #f1f1f1;
+    height: 5%;
+    width: 100%;
+    color: black;
+}
+
+#select_case_box_bottom_apply {
+    float: right;
+    margin-right: 15px;
+}
+
+#select_case_box_bottom_apply:hover,
+#select_case_box_bottom_apply:focus {
+    color: #797979;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#hp_case_container {
+    overflow: auto;
+    padding: 5px 25px 5px 25px;
+    width: 100%;
+    height: 90%;
+}
+
+#hp_select_case {
+    padding: 5px 25px 5px 25px;
+    width: 40%;
+    height: 100%;
+    text-align: center;
+    float: left;
+}
+
+#hp_select_all {
+    padding: 5px 25px 5px 25px;
+    width: 20%;
+    height: 100%;
+    float: left;
+    text-align: center;
+}
+
+#hp_selected_case {
+    padding: 5px 25px 5px 25px;
+    width: 40%;
+    height: 100%;
+    text-align: center;
+    float: right;
+}
+
+#select_case {
+    padding: 5px 25px 5px 25px;
+    width: 70%;
+    height: 95%;
+}
+
+#selected_cased {
+    padding: 5px 25px 5px 25px;
+    width: 70%;
+    height: 95%;
+}
+
+#h_btn_op_list {
+    padding: 5px 25px 5px 25px;
+}
+
+#b_gen_result_html {
+    float: right;
+}
+
+#b_test_history {
+    float: right;
+}
+
+/* h_result_box background*/
+#h_result_box {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4);
+    -webkit-animation-name: fadeIn;
+    -webkit-animation-duration: 0.4s;
+    animation-name: fadeIn;
+    animation-duration: 0.4s;
+}
+
+/* hp_result_box Content */
+#h_result_box_content {
+    position: fixed;
+    bottom: 0;
+    background-color: #fefefe;
+    width: 100%;
+    height: 90%;
+    -webkit-animation-name: slideIn;
+    -webkit-animation-duration: 0.4s;
+    animation-name: slideIn;
+    animation-duration: 0.4s
+}
+
+#h_result_box_content_header0 {
+    flex: left;
+}
+
+/* hp_result_box close button */
+#h_result_box_content_close {
+    float: right;
+}
+
+#h_result_box_content_close:hover,
+#h_result_box_content_close:focus {
+    color: gray;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#h_result_box_header {
+    padding: 5px 25px 5px 25px;
+    background-color: #f1f1f1;
+    color: black;
+    height: 6%;
+    width: 100%;
+}
+
+/*#h_result_box_body {
+    padding: 5px 25px 5px 25px;
+    height: 88%;
+    width: 100%;
+}*/
+
+#h_result_box_bottom {
+    padding: 5px 25px 5px 25px;
+    background-color: #f1f1f1;
+    color: black;
+    height: 6%;
+    width: 100%;
+    float: right;
+}
+
+/* h_result_box animation */
+@-webkit-keyframes slideIn {
+    from {bottom: -300px; opacity: 0} 
+    to {bottom: 0; opacity: 1}
+}
+
+@keyframes slideIn {
+    from {bottom: -300px; opacity: 0}
+    to {bottom: 0; opacity: 1}
+}
+
+@-webkit-keyframes fadeIn {
+    from {opacity: 0} 
+    to {opacity: 1}
+}
+
+@keyframes fadeIn {
+    from {opacity: 0} 
+    to {opacity: 1}
+}
+
+#b_uploaded_file {
+    width: 30%;
+    border: dashed;
+}
+
+/* user upload box background */
+#h_user_upload {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    padding-top: 10%;
+    width: 100%;
+    height: 100%;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4);
+}
+
+/* user upload box content */
+#h_user_upload_content {
+    background-color: #fefefe;
+    margin: auto;
+    width: 30%;
+    height: 80%;
+    border-radius: 4px;
+    border: 1px solid #D0D0D0;
+    text-align: center;
+    -webkit-animation-name: case_selector_box;
+    -webkit-animation-duration: 0.4s;
+    animation-name: case_selector_box;
+    animation-duration: 0.4s;
+}
+
+#ck-button {
+    margin: 5px;
+    background-color: #EFEFEF;
+    border-radius: 4px;
+    border: 1px solid #D0D0D0;
+}
+
+#ck-button label {
+    width: 100%;
+    margin-bottom: 0rem;
+}
+
+#ck-button:hover,
+#ck-button:focus {
+    background: #8B8B8C;
+    cursor: pointer;
+}
+
+#ck-button label span {
+    display: block;
+}
+
+#ck-button label input {
+    position: absolute;
+    top: -20px;
+}
+
+#ck-button input:checked + span{
+    width: 100%;
+    background-color: #347FCA;
+    color: #fff;
+}
+
+#list_user_upload_head {
+    height: 6%;
+}
+
+#list_user_upload {
+    padding: 5px 25px 5px 25px;
+    overflow: auto;
+    height: 88%;
+}
+
+#list_user_upload_bottom {
+    height: 6%;
+}
+
+#list_user_upload_ok:hover,
+#list_user_upload_ok:focus {
+    color: #797979;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* h_history_box background*/
+#h_history_box {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4);
+    -webkit-animation-name: fadeIn;
+    -webkit-animation-duration: 0.4s;
+    animation-name: fadeIn;
+    animation-duration: 0.4s;
+}
+
+/* h_history_box Content */
+#h_history_box_content {
+    position: fixed;
+    bottom: 0;
+    background-color: #fefefe;
+    width: 100%;
+    height: 90%;
+    -webkit-animation-name: slideIn;
+    -webkit-animation-duration: 0.4s;
+    animation-name: slideIn;
+    animation-duration: 0.4s
+}
+
+#h_history_box_content_header0 {
+    flex: left;
+}
+
+/* h_history_box close button */
+#h_history_box_content_close {
+    float: right;
+}
+
+#h_history_box_content_header0_back:hover,
+#h_history_box_content_header0_back:focus {
+    color: gray;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#h_history_box_content_close:hover,
+#h_history_box_content_close:focus {
+    color: gray;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#h_history_box_header {
+    padding: 5px 25px 5px 25px;
+    background-color: #f1f1f1;
+    color: black;
+    height: 6%;
+    width: 100%;
+}
+
+#h_history_box_body {
+    padding: 5px 25px 5px 25px;
+    height: 88%;
+    width: 100%;
+}
+
+#h_history_box_bottom {
+    padding: 5px 25px 5px 25px;
+    background-color: #f1f1f1;
+    color: black;
+    height: 6%;
+    width: 100%;
+    float: right;
+}
+
+/* h_history_box animation */
+@-webkit-keyframes slideIn {
+    from {bottom: -300px; opacity: 0} 
+    to {bottom: 0; opacity: 1}
+}
+
+@keyframes slideIn {
+    from {bottom: -300px; opacity: 0}
+    to {bottom: 0; opacity: 1}
+}
+
+@-webkit-keyframes fadeIn {
+    from {opacity: 0} 
+    to {opacity: 1}
+}
+
+@keyframes fadeIn {
+    from {opacity: 0} 
+    to {opacity: 1}
+}

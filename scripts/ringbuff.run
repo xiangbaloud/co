@@ -1,0 +1,12 @@
+source coverage/scripts/utility.scp
+clear_log_message
+export TEST_ITEM="ringbuff"
+
+cmd_check "insmod lfsmdr.ko fg_netlink_event_on=1 lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8"
+cmd_check "./rfsioctl /dev/sofactrl finish_init 839"
+cmd_check "./rfsioctl /dev/sofactrl finish_init 50000"
+
+coverage/scripts/proc.run
+rmmod_lfsmdr
+coverage/collect.sh
+copy_log_message

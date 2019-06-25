@@ -1,0 +1,42 @@
+
+dev_array=(b c d e f g h i)
+
+attach_disk()
+{
+	Soure="/dev/disk/by-path/ip-172.19.2.2:3260-iscsi-iqn.2018-06.com.accelstor.p710:vm2lab15-lun-$(( ${1} + 1 ))"
+	sshpass -p accelstor ssh root@10.144.7.5 "virsh attach-disk ${HOSTNAME} ${Soure} sd${dev_array[${1}]} --type lun --cache none --persistent"
+	echo "attach sd${dev_array[${1}]} drive (${1})"  >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+}
+
+detach_disk()
+{	
+	sshpass -p accelstor ssh root@10.144.7.5 "virsh detach-disk ${HOSTNAME} sd${dev_array[${1}]} --persistent"
+	echo "detach sd${dev_array[${1}]} drive (${1})"  >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+}
+
+wait_rebuild()
+{
+	timeout_cnt=0
+	timeout_t=600   
+	timeout_poweroff_t=120
+	
+	expect_num=$(grep -v "drive" /proc/lfsm/status | wc -l)
+	while true
+	do
+		if (($timeout_cnt>$timeout_poweroff_t))
+		then
+			 echo "time out.." >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+			 exit 1
+		fi
+		
+		ready_num=`cat /proc/lfsm/status | grep normal | cut -f1 -d' ' | wc -l | tr -d '\n'`;
+		if (( $ready_num==$expect_num ))
+		then
+			echo "rescue ok" >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+			break;
+		fi
+		echo "Wait yakin rebuilding..."  >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+		sleep 1
+		timeout_cnt=$(($timeout_cnt+1))
+	done
+}

@@ -1,0 +1,23 @@
+source coverage/scripts/utility.scp
+source coverage/scripts/scandev.run
+clear_log_message
+export TEST_ITEM="crash"
+
+cmd_check "insmod lfsmdr.ko lfsm_reinstall=1 kdump_meta_load=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8 tf_crash_eumulation=1" 1
+cmd_check "./sofactl volcreate hello1 2g"
+cmd_check "./sofactl volcreate hello2 2g"
+cmd_check "./sofactl volextend hello2 4g"
+fio coverage/scripts/short.fio
+detach_disk 1
+sleep 10
+
+rmmod_lfsmdr 1
+cmd_check "insmod lfsmdr.ko lfsm_reinstall=0 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" 1
+
+attach_disk 1
+wait_rebuild
+sleep 10
+rmmod_lfsmdr 1
+
+coverage/collect.sh
+copy_log_message

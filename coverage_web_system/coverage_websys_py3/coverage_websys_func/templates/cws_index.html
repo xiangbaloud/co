@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>coverage-test web system</title>
+    </head>
+    <body>
+        <div class="navbar navbar-default navbar-static-top" role="navigation" id="h_header">
+            <div class="navbar-header">
+                <a id="h_header_content" class="navbar-brand">Coverage Test System</a><a id="system_state"></a>
+            </div>
+            <div>
+                <button class="btn btn-outline-dark" id="b_reset_test" onclick="restart_everything()">服務重啟</button>
+            </div>
+        </div>
+        <div id="d-reload">
+            <div id="d-reload-content">
+                <img src="{% static "images/loading.gif" %}">
+            </div>
+        </div>
+        <!-- list of uploaded files -->
+<!--         <div id="file_list">
+            {% if documents %}
+                <ul>
+                    {% for document in documents %}
+                        <li><a href="{{ document.docfile.url }}">{{ document.docfile.name }}</a></li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No File.</p>
+            {% endif %}
+        </div> -->
+        <div id="b_container">
+            <div id="file_upload">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <p>
+                        {{ form.docfile.label }} <br>
+                        {{ form.docfile.help_text }}
+                    </p>
+                    <p>
+                        {% if systemisbusy %}
+                            <font color="red">{{ systemisbusy }}</font>
+                        <!-- {{ form.docfile.errors }} -->
+                        {% else %}
+                            <font color="red">{{ form.non_field_errors }}</font>
+                        {% endif %}
+                        {{ form.docfile }}
+                    </p>
+                    <p><input type="submit" value="上傳檔案"></p>
+                </form>
+                <p><button id="b_user_upload" onclick="user_upload()">已上傳的 YAKIN</button></p>
+            </div>
+            <div id="checkout_git">
+                <p>
+                    當前所在分支為 <font style="color: green"><a id="current_branch" value="{{current_branch}}">{{current_branch}}</a></font><br>
+                    如果你想要切換到其他分支，可選擇你要的分支，選擇後點選切換分支
+                </p>
+                <p>
+                    <input type="text" placeholder=" 搜尋 ..." id="branch_searchBox"><br>
+                    <select id="hp_select_branch" size="5" onchange="branch_selector(this)">
+                        {% for branch in all_branch %}
+                            <option value="{{branch.id}}">{{branch}}</option>
+                        {% endfor %}
+                    </select><br>
+                    <input type="text" value="" id="commit_id">
+                    <button onclick="check_out()">切換分支</button>
+                </p>
+                <p id="check_out_id"></p>
+            </div>
+        </div>
+        <div>
+            <hr class="line">
+        </div>
+        <div id="h_btn_op_list">
+            <button class="btn btn-outline-secondary" id="b_select_case" onclick="select_case()">選擇測試項</button>
+            <button class="btn btn-outline-secondary" id="b_start_test" onclick="start_test()">開始測試</button>
+            <button class="btn btn-outline-secondary" id="b_test_history" onclick="go_history()">查看歷史記錄</button>
+            <!-- <button id="b_gen_result_html" onclick="gen_result_html()">產生最近一次測試報告</button> -->
+        </div>
+        <div id="h_testcase_selector">
+            <!-- <button id="b_select_case" onclick="select_case()">select case</button> -->
+            <div id="select_case_box" class="modal">
+                <div id="select_case_box_content">
+                    <div id="select_case_box_header">
+                        <span id="select_case_box_header0">選擇測試項目</span>
+                    </div>
+                    <div id="hp_case_container">
+                        <div id="hp_select_case">
+                            <select id="select_case" onchange="case_selector(this)" size="20">
+                                {% for case in all_cases %}
+                                    <option value="{{case.id}}">{{case}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div id="hp_select_all">
+                            <p><button onclick="select_all('all')">選擇全部</button></p>
+                            <p><button onclick="select_all('clear')">清除全部</button></p>
+                        </div>
+                        <div id="hp_selected_case">
+                            <select id="selected_cased" onchange="cased_selector(this)" size="20">
+                            </select>
+                        </div>
+                    </div>
+                    <div id="select_case_box_bottom">
+                        <span id="select_case_box_header_close">取消</span>
+                        <span id="select_case_box_bottom_apply">送出</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="h_user_upload" class="modal">
+            <div id="h_user_upload_content">
+                <div id="list_user_upload_head">
+                    <span>已上傳的 YAKIN 清單</span>
+                </div>
+                <div id="list_user_upload">
+                    {% if documents %}
+                        {% for document in documents %}
+                            <div id="ck-button">
+                                <label>
+                                    <input class="hp_user_upload_chkbox" type="checkbox" value="{{ document.docfile.name }}" onclick="select_user_upload(this)">
+                                    <span>{{ document.docfile.name }}, Upload Time: {{ document.docfile_upload_time }}</span>
+                                </label>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p><a style="color: red">這裡沒有任何上傳的檔案</a></p>
+                    {% endif %}
+                </div>
+                <div id="list_user_upload_bottom">
+                    <span id="list_user_upload_ok">送出</span>
+                </div>
+            </div>
+        </div>
+        <div id="h_start_to_test">
+            <!-- <p><button id="b_start_test" onclick="start_test()">start test</button></p> -->
+            <div class="tab">
+                <button class="btn btn-secondary" onclick="switchlogtab(event, 'console')">console</button>
+                <button class="btn btn-secondary" onclick="switchlogtab(event, 'syslog')">syslog</button>
+                <button class="btn btn-secondary" onclick="switchlogtab(event, 'case_result')">result</button>
+                <button class="btn btn-secondary" onclick="switchlogtab(event, 'h_result_box_body')">report</button>
+                <!-- <button id="b_result_output" onclick="get_result()">report</button> -->
+            </div>
+            <div id="console" class="tabcontent">
+                <div id="return_log_a"></div>
+            </div>
+            <div id="syslog" class="tabcontent">
+                <div id="return_log_b"></div>
+            </div>
+            <div id="case_result" class="tabcontent">
+                <div id="return_log_case_result"></div>
+            </div>
+            <div id="h_result_box_body" class="tabcontent">
+            </div>
+        </div>
+<!--         <div id="h_result_box" class="modal">
+            <div id="h_result_box_content">
+                <div id="h_result_box_header">
+                    <span id="h_result_box_content_header0" class="navbar-brand">結果報告</span>
+                </div>
+                <div id="h_result_box_body"></div>
+                <div id="h_result_box_bottom">
+                    <span id="h_result_box_content_close" class="navbar-brand">關閉</span>
+                </div>
+            </div>
+        </div> -->
+        <div id="h_history_box" class="modal">
+            <div id="h_history_box_content">
+                <div id="h_history_box_header">
+                    <span id="h_history_box_content_header0" class="navbar-brand">歷史測試記錄</span>
+                    <span id="h_history_box_content_header0_back">返回列表</span>
+                    <!-- <span id="h_history_box_content_header0_pageup">上一頁</span> -->
+                    <!-- <span id="h_history_box_content_header0_pagedown">下一頁</span> -->
+                </div>
+                <div id="h_history_box_body"></div>
+                <div id="h_history_box_bottom">
+                    <span id="h_history_box_content_close" class="navbar-brand">關閉</span>
+                </div>
+            </div>
+        </div>
+    <link rel="stylesheet" href="{% static "css/bootstrap.min.css" %}" type="text/css">
+    <link rel="stylesheet" href="{% static "css/style.css" %}" type="text/css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="{% static "js/index.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/bootstrap.min.js" %}"></script>
+</html>

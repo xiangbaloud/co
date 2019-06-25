@@ -1,0 +1,86 @@
+
+source coverage/scripts/scandev.run
+source coverage/scripts/utility.scp
+clear_log_message
+for (( i=0; i<=1; i=i+1 ))
+do
+	export TEST_ITEM="dedup_$i"
+	tf_crash_eumulation=$i
+
+	cmd_check "insmod lfsmdr.ko tf_crash_eumulation=$tf_crash_eumulation lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" 1
+
+	cmd_check "./rfsioctl /dev/sofactrl dedup_enable"
+	cmd_check "./rfsioctl /dev/sofactrl setxpid 1"
+
+	cmd_check "./sofactl volcreate volume0 2g"
+	cmd_check "./sofactl volcreate volume1 2g"
+	cmd_check "./sofactl volcreate volume2 2g"
+
+	cmd_check "mkfs.ext4 -F -b 4096 /dev/lfsm-0"
+	cmd_check "mkfs.ext4 -F -b 4096 /dev/lfsm-1"
+	cmd_check "mkfs.ext4 -F -b 4096 /dev/lfsm-2"
+
+	cmd_check "mkdir -p /mnt/win7_0"
+	cmd_check "mount /dev/lfsm-0 /mnt/win7_0"
+
+	cmd_check "mkdir -p /mnt/win7_1"
+	cmd_check "mount /dev/lfsm-1 /mnt/win7_1"
+
+	cmd_check "mkdir -p /mnt/win7_2"
+	cmd_check "mount /dev/lfsm-2 /mnt/win7_2"
+
+	nDir=38
+	nfiles_access=100
+	fsize=$(($((1024**2))/512))   #sector base
+
+	for ((j=0;j<$nDir;j++))
+	do
+		cmd_check "mkdir -p /mnt/win7_0/Dir$j"
+		cmd_check "mkdir -p /mnt/win7_1/Dir$j"
+		cmd_check "mkdir -p /mnt/win7_2/Dir$j"
+		cmd_check "$UIOTEST_DIR/ftest /mnt/win7_0/Dir$j $nfiles_access $fsize 100 $((123+$j)) 1 0" 
+		cmd_check "$UIOTEST_DIR/ftest /mnt/win7_1/Dir$j $nfiles_access $fsize 100 $((123+$j)) 1 0"
+		cmd_check "$UIOTEST_DIR/ftest /mnt/win7_2/Dir$j $nfiles_access $fsize 100 $((123+$j)) 1 0"
+	done
+
+	cmd_check "sync"
+
+	cmd_check "./sofactl volclone_for_dedup volume0 vol0"
+	cmd_check "./sofactl volclone_for_dedup volume1 vol1"
+	cmd_check "./sofactl volclone_for_dedup volume2 vol2"
+
+	cmd_check "mkdir -p /mnt/win7_3"
+	cmd_check "mount -o ro /dev/lfsm-3 /mnt/win7_3"
+
+	cmd_check "mkdir -p /mnt/win7_4"
+	cmd_check "mount -o ro /dev/lfsm-4 /mnt/win7_4"
+
+	cmd_check "mkdir -p /mnt/win7_5"
+	cmd_check "mount -o ro /dev/lfsm-5 /mnt/win7_5"
+
+	cmd_check "umount /mnt/win7_0"
+	cmd_check "umount /mnt/win7_1"
+	cmd_check "umount /mnt/win7_2"
+
+	cmd_check "./DedupCLI/bin/dedup-cli /mnt/win7_3 /mnt/win7_4 /mnt/win7_5"
+
+	ignore_cmd_check "./rfsioctl /dev/sofactrl dedup_flush_qu"
+
+	cmd_check "umount /mnt/win7_3"
+	cmd_check "umount /mnt/win7_4"
+	cmd_check "umount /mnt/win7_5"
+
+	detach_disk 4
+	sleep 5
+
+	rmmod_lfsmdr 1
+	cmd_check "insmod lfsmdr.ko tf_crash_eumulation=$tf_crash_eumulation lfsm_reinstall=0 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" 1
+	cmd_check "$YAKIN_DIR/rfsioctl /dev/sofactrl dedup_enable"
+	attach_disk 4
+	wait_rebuild
+	sleep 10
+
+	rmmod_lfsmdr 1
+	coverage/collect.sh
+	copy_log_message
+done

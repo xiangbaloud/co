@@ -1,0 +1,21 @@
+
+rang=262144
+round=$(($rang/2))
+st=0
+Iround=3
+
+insmod lfsmdr.ko tf_crash_eumulation=1 lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8
+./sofactl volcreate vol0 1g
+	
+export utest_seed48=123
+$UIOTEST_DIR/ttest /dev/lfsm-0 randswsr $rang $round $st > /dev/null
+coverage/scripts/scandev.run 0 "remove"
+sleep 5
+rmmod_lfsmdr
+insmod lfsmdr.ko tf_crash_eumulation=1 lfsm_reinstall=0 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8
+$UIOTEST_DIR/ttest /dev/lfsm-0 chkrandswsr $rang $round $st > /dev/null
+sleep 5
+
+rmmod_lfsmdr
+coverage/collect.sh
+copy_log_message

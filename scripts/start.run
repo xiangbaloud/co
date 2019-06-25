@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# for coverage web
+echo 1 >> /tmp/covt_result
+
+cd ../../
+coverage/envcheck.sh
+if (($? == 1))
+then
+	echo "Fail to pass env check"
+	exit
+fi
+
+export TEST_TIME="$(date +%Y_%m%d_%H%M%S)"
+export YAKIN="$(basename $PWD)"
+export ROOT_DIR="/home/lfsmlog"
+export YAKIN_DIR="${ROOT_DIR}/${YAKIN}"
+export COVERAGE_DIR="${YAKIN_DIR}/coverage"
+export UIOTEST_DIR="${ROOT_DIR}/uiotest"
+export GEMINI_DIR="${ROOT_DIR}/gemini"
+coverage/scripts/build.scp
+
+source coverage/scripts/utility.scp
+check_dir $COVERAGE_DIR/log
+check_dir $COVERAGE_DIR/log/$TEST_TIME
+
+rm -f coverage/gcov/*
+#rm -rf coverage/output/*
+rm  -rf *.gcda
+rm  -rf *.gcno
+
+if [[ -f /tmp/user_case.lst ]]; then
+	user_case="/tmp/user_case.lst"
+	exec < $user_case
+	while read case
+	do
+		script_check "$COVERAGE_DIR/scripts/$case"
+	done
+else	
+	# script_check "$COVERAGE_DIR/scripts/module_install.run"
+	# script_check "$COVERAGE_DIR/scripts/gc.run"
+	# script_check "$COVERAGE_DIR/scripts/volop.run"
+	# script_check "$COVERAGE_DIR/scripts/ioctl.run"
+	# script_check "$COVERAGE_DIR/scripts/basic.run"
+	# script_check "$COVERAGE_DIR/scripts/crash.run"
+	# script_check "$COVERAGE_DIR/scripts/hotplug.run"
+	# script_check "$COVERAGE_DIR/scripts/extend.run"
+	# script_check "$COVERAGE_DIR/scripts/bioctrl.run"
+	# script_check "$COVERAGE_DIR/scripts/ringbuff.run"
+	# script_check "$COVERAGE_DIR/scripts/xcp.run"
+	# script_check "$COVERAGE_DIR/scripts/dedup.run"
+	# script_check "$COVERAGE_DIR/scripts/snapshot.run"
+	# script_check "$COVERAGE_DIR/scripts/trim.run"
+	# script_check "$COVERAGE_DIR/scripts/recovery_trim.run"
+	# script_check "$COVERAGE_DIR/scripts/poweroff_trim.run"
+	# script_check "$COVERAGE_DIR/scripts/jbof.run"
+fi
+
+#To generate coverage report
+$COVERAGE_DIR/display.sh
+cd coverage
+cp -R $COVERAGE_DIR/output $COVERAGE_DIR/log/$TEST_TIME
+
+# for coverage web
+[[ $? == 0 ]] && echo "finish" >> /tmp/covt_result

@@ -1,0 +1,117 @@
+source coverage/scripts/utility.scp
+clear_log_message
+export TEST_ITEM="volsnap_del"
+
+disksize=2621440
+trim_len=$disksize
+rang=$disksize
+round=2048
+st=0
+IO_round=10
+cn_keep=5
+
+
+cmd_check "insmod lfsmdr.ko lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8 tf_crash_eumulation=1 ratio_logi_provision=20"
+
+cmd_check "./sofactl volcreate vol0 10g"
+
+export utest_seed48=12345
+$UIOTEST_DIR/ttest /dev/lfsm-0 randsw $rang $round $st > $COVERAGE_DIR/log/$TEST_TIME/w_$TEST_ITEM.log
+
+
+cmd_check "./sofactl volclone vol0 vol1"
+cmd_check "./sofactl volclone vol0 vol2"
+cmd_check "./sofactl volclone vol0 vol3"
+
+
+for ((i=1; i<=3; i++))
+do
+	export utest_seed48=$((13579+$i))
+	$UIOTEST_DIR/ttest /dev/lfsm-$i randsw $rang $round $st > $COVERAGE_DIR/log/$TEST_TIME/w_$TEST_ITEM.log
+done
+for ((i=1; i<=$IO_round; i++))
+do
+	export utest_seed48=$((12345+$i))
+	$UIOTEST_DIR/ttest /dev/lfsm-2 randsw $rang $round $st > $COVERAGE_DIR/log/$TEST_TIME/w_$TEST_ITEM.log
+	cmd_check "./sofactl volsnap vol2 volsnap$i"
+	if (($i > $cn_keep ))
+        then
+		cmd_check "./sofactl inactivate volsnap$(($i-$cn_keep))"
+		cmd_check "./sofactl voldel volsnap$(($i-$cn_keep))"
+	fi
+done
+
+export day_snap_start=`expr $IO_round - $cn_keep + 1`
+
+for ((i=$day_snap_start;i<=$IO_round;i++))
+do
+	cmd_check "./sofactl volrestore volsnap$i vol3"
+
+	export utest_seed48=$((12345+$i))
+	$UIOTEST_DIR/ttest /dev/lfsm-3 randsr $rang $round $st > $COVERAGE_DIR/log/$TEST_TIME/r_$TEST_ITEM.log
+
+	cor_num=`awk -f "$COVERAGE_DIR/scripts/check_correct_num.awk" $COVERAGE_DIR/log/$TEST_TIME/r_$TEST_ITEM.log`
+	echo "round=$round, cor_num=$cor_num" >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+        err=$(($round-$cor_num))
+        if (($err==0))
+        then
+                echo "check data ok!!" >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+        else
+                echo "check data fail!!" >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+                rmmod_lfsmdr
+                exit 1
+        fi
+done
+
+sleep 5
+rmmod_lfsmdr
+cmd_check "insmod lfsmdr.ko lfsm_reinstall=0 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8 ratio_logi_provision=20"
+
+
+for ((i=$IO_round;i>=$day_snap_start;i--))
+do
+	cmd_check "./sofactl volrestore volsnap$i vol3"
+
+        export utest_seed48=$((12345+$i))
+        $UIOTEST_DIR/ttest /dev/lfsm-3 randsr $rang $round $st > $COVERAGE_DIR/log/$TEST_TIME/r_$TEST_ITEM.log
+
+        cor_num=`awk -f "$COVERAGE_DIR/scripts/check_correct_num.awk" $COVERAGE_DIR/log/$TEST_TIME/r_$TEST_ITEM.log`
+        err=$(($round-$cor_num))
+        if (($err==0))
+        then
+                echo "check data ok!!" >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+        else
+                echo "check data fail!!" >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+                rmmod_lfsmdr
+                exit 1
+        fi
+done
+
+sleep 5
+rmmod_lfsmdr
+cmd_check "insmod lfsmdr.ko lfsm_reinstall=0 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8 ratio_logi_provision=20"
+
+
+for ((i=$day_snap_start;i<=$IO_round;i++))
+do
+	cmd_check "./sofactl volrestore volsnap$i vol3"
+
+        export utest_seed48=$((12345+$i))
+        $UIOTEST_DIR/ttest /dev/lfsm-3 randsr $rang $round $st > $COVERAGE_DIR/log/$TEST_TIME/r_$TEST_ITEM.log
+
+        cor_num=`awk -f "$COVERAGE_DIR/scripts/check_correct_num.awk" $COVERAGE_DIR/log/$TEST_TIME/r_$TEST_ITEM.log`
+        err=$(($round-$cor_num))
+        if (($err==0))
+        then
+                echo "check data ok!!" >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+        else
+                echo "check data fail!!" >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+                rmmod_lfsmdr
+                exit 1
+        fi
+done
+
+sleep 5
+rmmod_lfsmdr
+coverage/collect.sh
+copy_log_message

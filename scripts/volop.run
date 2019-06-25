@@ -1,0 +1,257 @@
+source coverage/scripts/utility.scp
+clear_log_message
+export TEST_ITEM="volop"
+
+cmd_check "insmod lfsmdr.ko lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8"
+cmd_check "./sofactl volcreate vol0 5g"
+#error op
+ignore_cmd_check "./sofactl volcreate vol0 5g"
+ignore_cmd_check "./sofactl volextend e_vol 10g"
+ignore_cmd_check "./sofactl voldel vol0"
+ignore_cmd_check "./sofactl voldel e_vol"
+ignore_cmd_check "./sofactl volcreate e_vol 2048g"
+ignore_cmd_check "./sofactl volclone errvol0 errvol1"
+
+#volume clone/replace
+cmd_check "./sofactl volclone vol0 vol1"
+
+cmd_check "./sofactl inactivate vol0"
+cmd_check "./sofactl voldel vol0"
+
+#volume clone thick
+cmd_check "./sofactl volclone_thick vol1 vol_c_thick"
+#volume clone for dedup
+cmd_check "./sofactl volclone_for_dedup vol1 vol_c_dedup"
+
+coverage/scripts/proc.run
+
+rmmod_lfsmdr
+cmd_check "insmod lfsmdr.ko lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8"
+
+#set remote vol id
+cmd_check "./sofactl volcreate hello 5g"
+cmd_check "./sofactl set_remote_volume_id hello 0"
+#volume extend
+cmd_check "./sofactl volextend hello 10g"
+#error op
+ignore_cmd_check "./sofactl set_remote_volume_id e_hello 0"
+
+#volume reduce
+cmd_check "./sofactl volreduce hello 10g"
+
+coverage/scripts/proc.run
+
+rmmod_lfsmdr
+cmd_check "insmod lfsmdr.ko tf_crash_eumulation=1 lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" 1
+
+#set volume to thick
+cmd_check "./sofactl volcreate vol_to_thick 5g"
+cmd_check "./sofactl vol2thick vol_to_thick"
+#error op
+ignore_cmd_check "./sofactl vol2thick vol_to_thick"
+ignore_cmd_check "./sofactl vol2thick err_vol"
+
+#create vol thick
+cmd_check "./sofactl volcreate_thick vol_thick 5g"
+cmd_check "./sofactl volextend vol_thick 5g"
+#error op
+ignore_cmd_check "./sofactl volextend vol_thick 1024g"
+ignore_cmd_check "./sofactl volcreate_thick err_vol_thick 20480000000g"
+
+#zero write
+cmd_check "dd if=/dev/zero of=/dev/sdb bs=1G count=1"
+cmd_check "echo 3 > /proc/sys/vm/drop_caches"
+sleep 5
+coverage/scripts/proc.run
+
+#recovery
+rmmod_lfsmdr 1
+cmd_check "insmod lfsmdr.ko tf_crash_eumulation=1 lfsm_reinstall=0 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" 1
+coverage/scripts/proc.run
+
+rmmod_lfsmdr 1
+cmd_check "insmod lfsmdr.ko tf_crash_eumulation=1 lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" 1
+
+#volume restore
+cmd_check "./sofactl volcreate res_vol0 5g"
+cmd_check "./sofactl volclone res_vol0 res_vol1"
+cmd_check "./sofactl volrestore res_vol0 res_vol1"
+#error op
+ignore_cmd_check "./sofactl volreduce res_vol0 3g"
+ignore_cmd_check "./sofactl volrestore err_vol0 res_vol1"
+ignore_cmd_check "./sofactl volrestore res_vol0 err_vol1"
+
+#volume freeze/prefreeze
+cmd_check "./sofactl freeze res_vol0"
+#error op
+cmd_check "./sofactl freeze res_vol0"
+
+cmd_check "./sofactl prefreeze res_vol1"
+#error op
+ignore_cmd_check "./sofactl freeze err_vol0"
+
+#volume active 
+cmd_check "./sofactl volcreate vol0 5g"
+cmd_check "./sofactl inactivate vol0"
+cmd_check "./sofactl activate vol0"
+
+coverage/scripts/proc.run
+
+#recovery
+rmmod_lfsmdr 1
+cmd_check "insmod lfsmdr.ko tf_crash_eumulation=1 lfsm_reinstall=0 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" 1
+coverage/scripts/proc.run
+
+rmmod_lfsmdr 1
+cmd_check "insmod lfsmdr.ko lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8"
+
+#volume uuid operation
+cmd_check "./sofactl volcreate vol_uuid 5g 1 123456"
+cmd_check "./sofactl volquery 123456"
+#error op
+ignore_cmd_check "./sofactl volclone_by_uuid 133323456 vol_uuid_c 234567"
+
+cmd_check "./sofactl volclone_by_uuid 123456 vol_uuid_c 234567"
+
+#error op(not set read only)
+ignore_cmd_check "./sofactl set_remote_backup_volumes vol_uuid_c 22334455"
+
+#set volume readonly
+cmd_check "./sofactl set_readonly vol_uuid_c"
+#error op
+ignore_cmd_check "./sofactl volextend vol_uuid_c 5g"
+ignore_cmd_check "./sofactl set_remote_backup_volumes err_vol_uuid_c 22334455"
+
+#set remote backup volumes
+cmd_check "./sofactl set_remote_backup_volumes vol_uuid_c 22334455"
+
+#get rsnapshot info
+for i in $(ls /proc/lfsm/rsnapshot/22334455); do 
+	cmd_check "cat /proc/lfsm/rsnapshot/22334455/$i"
+done; 
+
+#rsnapshot clean
+cmd_check "./sofactl set_rsnapshot_clean 22334455"
+
+coverage/scripts/proc.run
+
+rmmod_lfsmdr
+
+for (( i=0; i<=1; i=i+1 ))
+do
+	cmd_check "insmod lfsmdr.ko tf_crash_eumulation=$i lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" $i
+
+	#Qouta group
+	cmd_check "./rfsioctl /dev/sofactrl earlyresp 1"
+	cmd_check "./sofactl volcreate vol0 1g"
+	#error op(didn't belong to any id_qg)
+	ignore_cmd_check "./sofactl qg_vol_remove vol0"
+	
+	#error op
+	ignore_cmd_check "./sofactl qg_vol_add vol1 0"
+	
+	ignore_cmd_check "./sofactl alloc_qg_vol_add vol0 2000 0"
+	cmd_check "./sofactl volcreate vol1 1g"
+	
+	#error op
+	ignore_cmd_check "./sofactl qg_vol_add vol1 3000"
+	
+	cmd_check "./sofactl qg_vol_add vol1 0"
+
+	cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-0 sw 0 100"
+
+	#error op
+	ignore_cmd_check "./sofactl qg_resize 0 50"
+
+	cmd_check "./sofactl qg_vol_remove vol1"
+	cmd_check "./sofactl qg_resize 0 1500"
+
+	cmd_check "./sofactl volcreate vol2 1g"
+	ignore_cmd_check "./sofactl alloc_qg_vol_add vol2 2000 1"
+
+	cmd_check "./sofactl volcreate vol3 1g"
+	#error op
+	ignore_cmd_check "./sofactl alloc_qg_vol_add vol2 2000 1"
+	
+	ignore_cmd_check "./sofactl alloc_qg_vol_add vol3 2000 2"
+
+	cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-3 sw 0 10"
+	cmd_check "./rfsioctl /dev/sofactrl finish_init 10022 10 10"
+
+	cmd_check "./sofactl volcreate vol4 1g"
+	ignore_cmd_check "./sofactl alloc_qg_vol_add vol4 2000 2000"
+
+	#error op
+	ignore_cmd_check "./sofactl volcreate vol5 1g"
+	ignore_cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-5 sw 0 3000"
+	ignore_cmd_check "./sofactl qg_vol_add vol5 0"
+
+	cmd_check "cat /proc/lfsm/quota_group"
+
+	sleep 3
+
+	#qg recovery
+	rmmod_lfsmdr $i
+	
+	cmd_check "insmod lfsmdr.ko tf_crash_eumulation=$i lfsm_reinstall=0 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" $i
+	rmmod_lfsmdr $i
+done
+
+cmd_check "insmod lfsmdr.ko lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8"
+
+#vvol
+cmd_check "./sofactl volcreate vvol0 3g"
+cmd_check "./sofactl volcreate vvol1 3g"
+
+#error op
+ignore_cmd_check "./sofactl volrestore vvol0 vvol1"
+
+cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-0 randsw 786432 800000 0"
+cmd_check "./sofactl volclone vvol1 vvol2"
+cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-1 randsw 786432 800000 0"
+cmd_check "./sofactl vvol_allocated_bmp vvol0 0 1g 4096"
+cmd_check "./sofactl vvol_unshared_bmp vvol0 vvol1 0 1g 4096"
+cmd_check "./sofactl vvol_unshared_chunk vvol0 vvol1 0 1g"
+cmd_check "./sofactl vvol_unshared_chunk vvol0 0 1g"
+coverage/scripts/proc.run
+rmmod_lfsmdr
+
+sleep 3
+
+for (( i=0; i<=1; i=i+1 ))
+do
+    #replace recovery
+	cmd_check "insmod lfsmdr.ko tf_crash_eumulation=$i lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" $i
+	cmd_check "export utest_seed48=123"
+	cmd_check "./sofactl volcreate vol1 1g"
+	cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-0 randsw 262144 262144 0"
+	cmd_check "./sofactl volclone vol1 vol2"
+	cmd_check "./sofactl volclone vol1 vol3"
+	cmd_check "./sofactl volclone vol1 vol4"
+	cmd_check "./sofactl inactivate vol1"
+	cmd_check "./sofactl voldel vol1"
+
+	rmmod_lfsmdr $i
+	cmd_check "insmod lfsmdr.ko tf_crash_eumulation=$i lfsm_reinstall=0 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" $i
+	cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-3 randsr 262144 262144 0"
+	sleep 5
+	rmmod_lfsmdr $i
+done
+
+#del free logic space
+cmd_check "insmod lfsmdr.ko tf_crash_eumulation=1 lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" 1
+cmd_check "./sofactl volcreate vol1 1g"
+cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-0 randsw 262144 262144 0"
+cmd_check "./sofactl volclone vol1 vol2"
+cmd_check "./sofactl inactivate vol1"
+cmd_check "./sofactl voldel vol1"
+cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-1 randsw 262144 262144 0"
+sleep 5
+rmmod_lfsmdr 1
+cmd_check "insmod lfsmdr.ko tf_crash_eumulation=1 lfsm_reinstall=0 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8" 1
+cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-1 randsr 262144 262144 0"
+sleep 5
+	
+rmmod_lfsmdr 1
+coverage/collect.sh
+copy_log_message

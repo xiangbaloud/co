@@ -1,0 +1,25 @@
+[global]
+ioengine=libaio
+group_reporting
+thread
+
+direct=1
+readwrite=randwrite
+randrepeat=0
+iodepth=64
+#time_based
+#runtime=180
+#runtime=120
+norandommap
+#size=1M
+#verify=meta
+#runtime=10
+
+size=4G
+numjobs=1
+
+[task a]
+filename=/dev/lfsm-0
+bs=4K
+rw=randwrite
+

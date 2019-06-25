@@ -1,0 +1,18 @@
+#!/bin/bash
+
+cws_env="/home/coverage/coverage_web_system/env_py3"
+cws_manager="/home/coverage/coverage_web_system/coverage_websys_py3"
+
+source $cws_env/bin/activate
+cd $cws_manager
+
+# for multi thread
+# /home/coverage_web_system/env_py3/bin/celery multi start -A coverage_websys_py3 worker --beat -l info
+
+if [[ -f /home/coverage/coverage_web_system/env_py3/bin/celery ]]; then
+	sbin_celery="/home/coverage/coverage_web_system/env_py3/bin/celery"
+else
+	sbin_celery="/home/coverage_web_system/env_py3/bin/celery"
+fi
+
+$sbin_celery -A coverage_websys_py3 worker -l info

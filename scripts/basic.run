@@ -1,0 +1,28 @@
+source coverage/scripts/utility.scp
+clear_log_message
+export TEST_ITEM="basic"
+
+cmd_check "insmod lfsmdr.ko lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8"
+
+cmd_check "./rfsioctl /dev/sofactrl lat_track 1"
+cmd_check "./rfsioctl /dev/sofactrl force_bmt_commit 1"
+
+cmd_check "./sofactl volcreate hello 4g"
+cmd_check "dd if=/dev/urandom of=/dev/lfsm-0 bs=4M count=10 oflag=direct"
+cmd_check "./sofactl volclone hello hello-c"
+cmd_check "./sofactl volclone hello-c hello-cc"
+cmd_check "./sofactl volcreate xxxx 2g"
+cmd_check "./sofactl inactivate xxxx"
+cmd_check "./sofactl voldel xxxx"
+
+fio coverage/scripts/access.fio
+
+coverage/scripts/proc.run
+
+#After check(TBD)
+#echo "check disk(wait a while)"
+#coverage/scripts/lfsmfsck.run
+
+rmmod_lfsmdr
+coverage/collect.sh
+copy_log_message

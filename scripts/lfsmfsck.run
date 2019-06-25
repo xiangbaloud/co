@@ -1,0 +1,15 @@
+
+./lfsmfsck eu_pbno 100 > /dev/null 
+./lfsmfsck lpno 1000000 > /dev/null 
+./lfsmfsck eu_idhpeu 1000 > /dev/null 
+./lfsmfsck tab_idhpeu 1000 > /dev/null 
+./lfsmfsck eu_mdnode 1000 > /dev/null 
+./lfsmfsck eu_validcount 1000 > /dev/null 
+./lfsmfsck eu_state 1 > /dev/null 
+./lfsmfsck eu_active 1 > /dev/null 
+./lfsmfsck freelist 1000 > /dev/null 
+./lfsmfsck freelist_simple 1 > /dev/null 
+./lfsmfsck systable_hpeu 1 > /dev/null 
+./lfsmfsck systable 1 > /dev/null 
+
+coverage/collect.sh

@@ -1,0 +1,23 @@
+source coverage/scripts/utility.scp
+source coverage/scripts/scandev.run
+clear_log_message
+export TEST_ITEM="hotplug"
+
+cmd_check "insmod lfsmdr.ko lfsm_reinstall=1 cn_ssds_per_hpeu=4 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=1 lfsm_cn_ssds=8" 1
+
+cmd_check "$YAKIN_DIR/sofactl volcreate vol0 1g"
+cmd_check "./rfsioctl /dev/sofactrl force_bmt_commit 1"
+cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-0 randsw 262144 1500000 0"
+
+detach_disk 1
+sleep 10
+
+cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-0 randsr 262144 1500000 0"
+
+attach_disk 1
+wait_rebuild
+sleep 10
+
+rmmod_lfsmdr 1
+coverage/collect.sh
+copy_log_message

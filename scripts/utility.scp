@@ -1,0 +1,108 @@
+#!/bin/bash
+check_dir()
+{
+	if [ ! -d "$1" ]
+	then
+		mkdir $1
+	fi
+}
+
+check_file()
+{
+	if [ ! -f "$1" ]
+	then
+		touch $1
+	fi
+}
+
+clear_log_message()
+{
+	cat /dev/null > /var/log/messages
+}
+
+copy_log_message()
+{
+	cp /var/log/messages $COVERAGE_DIR/log/$TEST_TIME/messages_$TEST_ITEM.log
+	sync
+}
+
+echo_result()
+{
+	echo $1 >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_$TEST_ITEM.log
+	copy_log_message
+}
+
+rmmod_lfsmdr()
+{
+	if [ -z $1 ]; then
+		cmd_check "rmmod lfsmdr.ko"
+	else
+		cmd_check "rmmod lfsmdr.ko" $1
+	fi
+}
+
+check_err_msg()
+{
+	nl -b a /var/log/messages > $COVERAGE_DIR/log/$TEST_TIME/tmp_msg_all.log
+	awk "NR>=${2}&&NR<=${3}" $COVERAGE_DIR/log/$TEST_TIME/tmp_msg_all.log > $COVERAGE_DIR/log/$TEST_TIME/tmp_msg_range.log
+	if (($(grep "ERR" $COVERAGE_DIR/log/$TEST_TIME/tmp_msg_range.log | wc -l)!=0))
+	then
+		echo_result "LORERR happened!!(cmd:${1} , msg range:${2}~${3})"
+		
+		#avoid infinite recursive loop
+		rmmod lfsmdr.ko > /dev/null 2>&1
+		
+		exit 1
+	fi
+	
+}
+
+cmd_check()
+{
+	LOGGER_LINE=$(( $(nl -b a /var/log/messages | wc -l) + 1 ))
+	$1 > /dev/null 2>&1
+	ret=$?
+	if (($ret==0))
+	then
+		echo_result "$1 done! (${ret})"
+	else
+		echo_result "$1 fail! (${ret})"
+		
+		#avoid infinite recursive loop
+		# rmmod lfsmdr.ko > /dev/null 2>&1
+		
+		# exit 1
+	fi
+	TAIL_LOGGER_LINE=$(nl -b a /var/log/messages | wc -l)
+	
+	if [ -z $2 ] || [ $2 -eq 0 ] ; then
+		check_err_msg "$1" $LOGGER_LINE $TAIL_LOGGER_LINE
+	fi
+}
+
+script_check()
+{
+	$1 > /dev/null 2>&1
+	ret=$?
+	if (($ret!=0))
+	then
+		echo "$1 fail! (${ret})" >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_SCRIPT.log
+		echo "$(date "+%Y-%m-%d %H:%M:%S") $1 fail! (${ret})" >> /tmp/console_case_result.log
+		rmmod lfsmdr.ko > /dev/null 2>&1 
+		
+		#To generate coverage report
+		$COVERAGE_DIR/display.sh
+		cp -R $COVERAGE_DIR/output $COVERAGE_DIR/log/$TEST_TIME
+		
+		# exit 0
+	fi
+	echo "$1 done! (${ret})" >> $COVERAGE_DIR/log/$TEST_TIME/RESULT_SCRIPT.log
+	echo "$(date "+%Y-%m-%d %H:%M:%S") $1 done! (${ret})" >> /tmp/console_case_result.log
+}
+
+ignore_cmd_check()
+{
+	$1 > /dev/null
+	ret=$?
+	echo_result "$1 done! (${ret})"
+}

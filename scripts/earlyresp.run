@@ -1,0 +1,8 @@
+insmod lfsmdr.ko lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8
+./rfsioctl /dev/sofactrl earlyresp 1
+cat /proc/lfsm/modinfo > /dev/null
+./sofactl volcreate hello 4g
+dd if=/dev/urandom of=/dev/lfsm-0 bs=4M count=10 oflag=direct
+sleep 1
+rmmod_lfsmdr
+coverage/collect.sh

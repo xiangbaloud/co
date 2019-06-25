@@ -1,0 +1,27 @@
+source coverage/scripts/utility.scp
+clear_log_message
+export TEST_ITEM="trim"
+
+disksize=262144
+len=$(($disksize/4))
+st=$(($len/4))
+trim_start1=$(($len/4+$st))
+trim_len=$(($len/8))
+
+export utest_seed48=123	
+
+cmd_check "insmod lfsmdr.ko lfsm_reinstall=1 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8"
+cmd_check "./sofactl volcreate vol0 1g"
+cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-0 sw $st $len"
+cmd_check "blkdiscard -o $(($trim_start1*4096)) -l $(($trim_len*4096)) -v /dev/lfsm-0"
+cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-0 sr $st $len"
+
+sleep 3
+rmmod_lfsmdr
+cmd_check "insmod lfsmdr.ko lfsm_reinstall=0 cn_ssds_per_hpeu=2 lfsm_cn_pgroup=2 lfsm_cn_diskgrp=2 lfsm_cn_ssds=8"
+cmd_check "$UIOTEST_DIR/ttest /dev/lfsm-0 sr $st $len"
+sleep 3
+rmmod_lfsmdr
+
+coverage/collect.sh
+copy_log_message

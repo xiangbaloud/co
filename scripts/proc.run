@@ -1,0 +1,18 @@
+
+for i in $(ls /proc/lfsm/); do 
+	if [[ -f /proc/lfsm/$i ]]; then
+		cat /proc/lfsm/$i > /dev/null
+	elif [[ -d /proc/lfsm/$i ]]; then
+		for j in $(ls /proc/lfsm/$i); do 
+			cat /proc/lfsm/$i/$j > /dev/null
+		done; 
+	fi
+done; 
+
+#Read iodone again
+cat /proc/lfsm/iodone > /dev/null
+
+#Write op
+echo 0 > /proc/lfsm/affinity 
+
+coverage/collect.sh
