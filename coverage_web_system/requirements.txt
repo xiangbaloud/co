@@ -11,4 +11,4 @@ asgi_redis==1.4.3
 django-filebrowser==3.10.1
 django-filebrowser-no-grappelli==3.7.5
 image==1.5.27
-pillow==5.3.0
+pillow==9.0.0
